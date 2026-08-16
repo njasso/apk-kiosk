@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Par défaut : autoriser le trafic en clair (nécessaire pour un serveur
+         de SALLE LOCALE en http:// sur le réseau LAN, souvent sans certificat).
+         La navigation reste bornée par la liste blanche de la WebView. -->
+    <base-config cleartextTrafficPermitted="true" />
+
+    <!-- Production : on FORCE le HTTPS pour le domaine public.
+         Aucune connexion en clair vers na2quizappschool.uk n'est acceptée. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">na2quizappschool.uk</domain>
+    </domain-config>
+</network-security-config>

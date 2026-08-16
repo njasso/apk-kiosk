@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// La signature release n'est appliquée QUE si le keystore existe réellement.
+// Sinon, on retombe sur la signature debug → l'APK reste installable pour un
+// test pilote, et le build ne casse pas faute de secrets.
+def keystoreFile = file(System.getenv("KIOSK_KEYSTORE") ?: "keystore.jks")
+def hasKeystore = keystoreFile.exists()
+
+android {
+    namespace 'uk.na2quiz.kiosk'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "uk.na2quiz.kiosk"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                storeFile keystoreFile
+                storePassword System.getenv("KIOSK_STORE_PASSWORD") ?: ""
+                keyAlias System.getenv("KIOSK_KEY_ALIAS") ?: "na2quiz"
+                keyPassword System.getenv("KIOSK_KEY_PASSWORD") ?: ""
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            // release signé si keystore présent, sinon signature debug (test).
+            signingConfig hasKeystore ? signingConfigs.release : signingConfigs.debug
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.webkit:webkit:1.11.0'
+}

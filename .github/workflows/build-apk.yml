@@ -1,0 +1,56 @@
+name: Build APK Kiosque
+
+on:
+  push:
+    paths:
+      - 'apk-kiosk/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch: {}   # bouton "Run workflow" manuel
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apk-kiosk
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer le JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Installer le SDK Android
+        uses: android-actions/setup-android@v3
+
+      - name: Générer le wrapper Gradle (jar) si absent
+        run: gradle wrapper --gradle-version 8.7 || true
+
+      - name: Rendre gradlew exécutable
+        run: chmod +x ./gradlew
+
+      # ── Signature ─────────────────────────────────────────────
+      # Le keystore est stocké en secret GitHub (base64) et reconstruit ici.
+      - name: Restaurer le keystore
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: echo "$KEYSTORE_B64" | base64 -d > keystore.jks
+
+      - name: Construire l'APK release (signé si secrets présents)
+        env:
+          KIOSK_KEYSTORE: ${{ github.workspace }}/apk-kiosk/keystore.jks
+          KIOSK_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KIOSK_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KIOSK_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Publier l'APK en artefact téléchargeable
+        uses: actions/upload-artifact@v4
+        with:
+          name: na2quiz-kiosk-apk
+          path: apk-kiosk/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
