@@ -21,26 +21,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build Release APK
+      - name: Build APK
         working-directory: apk-kiosk
-        env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          # Restaurer le keystore si présent
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > keystore.jks
-          fi
-          # Donner les droits
           chmod +x gradlew
-          # Builder
-          ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: na2quiz-kiosk-apk
-          path: apk-kiosk/app/build/outputs/apk/release/*.apk
+          path: apk-kiosk/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
